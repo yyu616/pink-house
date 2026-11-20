@@ -4752,9 +4752,13 @@ float surfaceWave(vec2 p,float t){
   player.loop=true;
   player.volume=.35;
   let enabled=true, waiting=false, track, attempt=0;
-  try{enabled=localStorage.getItem('pink-house-sound')!=='muted';}catch{}
   const button=document.getElementById('soundToggle');
-  const render=()=>window.pinkHouseSound.render(enabled,waiting);
+  function render(){
+    window.pinkHouseSound.render(enabled,false);
+    const label=enabled?(waiting?'Sound on · click to start':'Mute sound'):'Unmute sound';
+    button.title=label;
+    button.setAttribute('aria-label',label);
+  }
   function play(preset){
     if(!enabled||!tracks[preset])return;
     if(track!==tracks[preset]){
@@ -4775,15 +4779,17 @@ float surfaceWave(vec2 p,float t){
   button.onclick=()=>{
     if(!waiting)enabled=!enabled;
     waiting=false;
-    try{localStorage.setItem('pink-house-sound',enabled?'on':'muted');}catch{}
     if(enabled)play(desktop.weatherPreset());
     else{attempt++;player.pause();}
     render();
   };
   window.addEventListener('pink-house-weather',event=>play(event.detail));
-  document.addEventListener('click',event=>{
-    if(waiting&&!button.contains(event.target))play(desktop.weatherPreset());
-  });
+  function unlockSound(event){
+    if(enabled&&(waiting||player.paused)&&!button.contains(event.target))play(desktop.weatherPreset());
+  }
+  document.addEventListener('pointerdown',unlockSound,{capture:true});
+  document.addEventListener('keydown',unlockSound,{capture:true});
+  document.addEventListener('click',unlockSound);
   render();
   play(desktop.weatherPreset());
 })();
